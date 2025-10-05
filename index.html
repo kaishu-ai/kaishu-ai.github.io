@@ -389,21 +389,235 @@
             color: #c62828;
         }
 
+        /* 平板端适配 */
+        @media (max-width: 1024px) {
+            .nav-container {
+                padding: 15px 20px;
+            }
+
+            .nav-menu {
+                gap: 20px;
+            }
+
+            .nav-link {
+                padding: 6px 12px;
+                font-size: 0.9em;
+            }
+        }
+
+        /* 移动端适配 */
         @media (max-width: 768px) {
+            body {
+                padding: 70px 15px 20px;
+            }
+
+            .nav-container {
+                padding: 12px 15px;
+                flex-wrap: wrap;
+            }
+
+            .nav-logo {
+                font-size: 1.2em;
+            }
+
+            .nav-right {
+                gap: 15px;
+                width: 100%;
+                justify-content: space-between;
+                margin-top: 10px;
+            }
+
+            .nav-menu {
+                gap: 10px;
+                flex: 1;
+            }
+
+            .nav-link {
+                padding: 6px 10px;
+                font-size: 0.85em;
+            }
+
+            .language-btn {
+                padding: 6px 12px;
+                font-size: 0.85em;
+            }
+
             .container {
-                padding: 20px;
+                padding: 25px 20px;
+                border-radius: 15px;
             }
 
             h1 {
-                font-size: 2em;
+                font-size: 1.8em;
+                margin-bottom: 8px;
             }
 
-            .confidence-bar {
-                width: 100px;
+            .subtitle {
+                font-size: 1em;
+                margin-bottom: 20px;
+            }
+
+            .upload-area {
+                padding: 30px 20px;
+                margin-bottom: 15px;
+            }
+
+            .upload-icon {
+                font-size: 3em;
+                margin-bottom: 10px;
+            }
+
+            .upload-text {
+                font-size: 1em;
+            }
+
+            .upload-hint {
+                font-size: 0.85em;
             }
 
             .button-group {
                 flex-direction: column;
+                gap: 10px;
+            }
+
+            button {
+                padding: 14px 25px;
+                font-size: 1em;
+                width: 100%;
+            }
+
+            #imagePreview {
+                max-height: 300px;
+            }
+
+            .results-title {
+                font-size: 1.3em;
+                margin-bottom: 15px;
+            }
+
+            .prediction-item {
+                padding: 12px 15px;
+                margin-bottom: 10px;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .prediction-label {
+                font-size: 1em;
+            }
+
+            .prediction-confidence {
+                width: 100%;
+                gap: 10px;
+            }
+
+            .confidence-bar {
+                flex: 1;
+                height: 8px;
+            }
+
+            .confidence-text {
+                min-width: 50px;
+                font-size: 0.95em;
+            }
+        }
+
+        /* 小屏幕手机适配 */
+        @media (max-width: 480px) {
+            body {
+                padding: 60px 10px 15px;
+            }
+
+            .nav-container {
+                padding: 10px;
+            }
+
+            .nav-logo {
+                font-size: 1.1em;
+                width: 100%;
+                margin-bottom: 8px;
+            }
+
+            .nav-right {
+                width: 100%;
+                margin-top: 0;
+            }
+
+            .nav-menu {
+                gap: 5px;
+            }
+
+            .nav-link {
+                padding: 5px 8px;
+                font-size: 0.8em;
+            }
+
+            .language-btn {
+                padding: 5px 10px;
+                font-size: 0.8em;
+            }
+
+            .container {
+                padding: 20px 15px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+
+            .subtitle {
+                font-size: 0.9em;
+            }
+
+            .upload-area {
+                padding: 25px 15px;
+            }
+
+            .upload-icon {
+                font-size: 2.5em;
+            }
+
+            .upload-text {
+                font-size: 0.95em;
+            }
+
+            .upload-hint {
+                font-size: 0.8em;
+            }
+
+            button {
+                padding: 12px 20px;
+                font-size: 0.95em;
+            }
+
+            .prediction-label {
+                font-size: 0.95em;
+            }
+        }
+
+        /* 触摸设备优化 */
+        @media (hover: none) and (pointer: coarse) {
+            button {
+                padding: 15px 30px;
+                min-height: 48px;
+            }
+
+            .nav-link {
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+            }
+
+            .language-btn {
+                min-height: 44px;
+            }
+
+            .upload-area {
+                min-height: 200px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
             }
         }
     </style>

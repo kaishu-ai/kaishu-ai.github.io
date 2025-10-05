@@ -312,26 +312,146 @@
             color: #333;
         }
 
-        @media (max-width: 768px) {
-            .container {
-                padding: 30px 20px;
-            }
-
-            .header h1 {
-                font-size: 2em;
-            }
-
-            .section h2 {
-                font-size: 1.5em;
+        /* 平板端适配 */
+        @media (max-width: 1024px) {
+            .nav-container {
+                padding: 15px 20px;
             }
 
             .nav-menu {
-                gap: 10px;
+                gap: 20px;
             }
 
             .nav-link {
                 padding: 6px 12px;
                 font-size: 0.9em;
+            }
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            body {
+                padding-top: 70px;
+            }
+
+            .nav-container {
+                padding: 12px 15px;
+                flex-wrap: wrap;
+            }
+
+            .nav-logo {
+                font-size: 1.2em;
+            }
+
+            .nav-right {
+                gap: 15px;
+                width: 100%;
+                justify-content: space-between;
+                margin-top: 10px;
+            }
+
+            .nav-menu {
+                gap: 10px;
+                flex: 1;
+            }
+
+            .nav-link {
+                padding: 6px 10px;
+                font-size: 0.85em;
+            }
+
+            .language-btn {
+                padding: 6px 12px;
+                font-size: 0.85em;
+            }
+
+            .container {
+                padding: 25px 20px;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .header p {
+                font-size: 1em;
+            }
+
+            .section h2 {
+                font-size: 1.4em;
+            }
+
+            .section p, .section ul li {
+                font-size: 0.95em;
+            }
+        }
+
+        /* 小屏幕手机适配 */
+        @media (max-width: 480px) {
+            body {
+                padding-top: 60px;
+            }
+
+            .nav-container {
+                padding: 10px;
+            }
+
+            .nav-logo {
+                font-size: 1.1em;
+                width: 100%;
+                margin-bottom: 8px;
+            }
+
+            .nav-right {
+                width: 100%;
+                margin-top: 0;
+            }
+
+            .nav-menu {
+                gap: 5px;
+            }
+
+            .nav-link {
+                padding: 5px 8px;
+                font-size: 0.8em;
+            }
+
+            .language-btn {
+                padding: 5px 10px;
+                font-size: 0.8em;
+            }
+
+            .container {
+                padding: 20px 15px;
+            }
+
+            .header h1 {
+                font-size: 1.5em;
+            }
+
+            .header p {
+                font-size: 0.9em;
+            }
+
+            .section h2 {
+                font-size: 1.2em;
+            }
+
+            .section p, .section ul li {
+                font-size: 0.9em;
+            }
+        }
+
+        /* 触摸设备优化 */
+        @media (hover: none) and (pointer: coarse) {
+            .nav-link {
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+            }
+
+            .language-btn {
+                min-height: 44px;
             }
         }
     </style>
