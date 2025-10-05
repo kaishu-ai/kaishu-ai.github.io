@@ -1,5 +1,4 @@
 // 全局变量
-let model = null;
 let currentImage = null;
 let mobileNetModel = null; // TensorFlow.js 原始模型
 let imagenetClasses = null; // ImageNet 类别标签
@@ -136,7 +135,7 @@ function loadImage(file) {
 
 // 分类按钮点击事件
 classifyBtn.addEventListener('click', async () => {
-    if (!model) {
+    if (!mobileNetModel) {
         showStatus(langManager.t('home.noModel'), 'error');
         return;
     }
