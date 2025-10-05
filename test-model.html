@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>模型加载测试</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.11.0"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 MobileNet 模型加载诊断</h1>
+    
+    <div class="test-section info">
+        <h2>测试环境</h2>
+        <p><strong>浏览器:</strong> <span id="browser"></span></p>
+        <p><strong>TensorFlow.js 版本:</strong> <span id="tfVersion"></span></p>
+        <p><strong>当前 URL:</strong> <span id="currentUrl"></span></p>
+    </div>
+
+    <div class="test-section">
+        <h2>步骤 1: 测试文件访问</h2>
+        <button onclick="testFileAccess()">测试文件访问</button>
+        <div id="fileAccessResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>步骤 2: 加载 ImageNet 类别</h2>
+        <button onclick="testImageNetClasses()">加载类别标签</button>
+        <div id="imagenetResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>步骤 3: 加载 MobileNet 模型</h2>
+        <button onclick="testModelLoad()">加载模型</button>
+        <div id="modelLoadResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>步骤 4: 测试推理</h2>
+        <button onclick="testInference()">测试推理</button>
+        <div id="inferenceResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>完整日志</h2>
+        <button onclick="clearLog()">清除日志</button>
+        <pre id="logOutput"></pre>
+    </div>
+
+    <script>
+        let model = null;
+        let classes = null;
+        let logMessages = [];
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${type.toUpperCase()}: ${message}`;
+            logMessages.push(logEntry);
+            document.getElementById('logOutput').textContent = logMessages.join('\n');
+            console.log(logEntry);
+        }
+
+        function showResult(elementId, message, isSuccess) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<p style="color: ${isSuccess ? 'green' : 'red'}">${message}</p>`;
+        }
+
+        // 初始化环境信息
+        document.getElementById('browser').textContent = navigator.userAgent;
+        document.getElementById('tfVersion').textContent = tf.version.tfjs;
+        document.getElementById('currentUrl').textContent = window.location.href;
+
+        // 测试 1: 文件访问
+        async function testFileAccess() {
+            log('开始测试文件访问...');
+            const files = [
+                'modelzoo/mobilenet/model.json',
+                'modelzoo/mobilenet/group1-shard1of3.bin',
+                'imagenet_classes.txt'
+            ];
+
+            let allSuccess = true;
+            let results = [];
+
+            for (const file of files) {
+                try {
+                    log(`检查文件: ${file}`);
+                    const response = await fetch(file);
+                    if (response.ok) {
+                        const size = response.headers.get('content-length');
+                        results.push(`✅ ${file} (${(size/1024).toFixed(2)} KB)`);
+                        log(`文件可访问: ${file}`);
+                    } else {
+                        results.push(`❌ ${file} - HTTP ${response.status}`);
+                        allSuccess = false;
+                        log(`文件访问失败: ${file} - ${response.status}`, 'error');
+                    }
+                } catch (error) {
+                    results.push(`❌ ${file} - ${error.message}`);
+                    allSuccess = false;
+                    log(`文件访问错误: ${file} - ${error.message}`, 'error');
+                }
+            }
+
+            showResult('fileAccessResult', results.join('<br>'), allSuccess);
+        }
+
+        // 测试 2: 加载类别标签
+        async function testImageNetClasses() {
+            log('开始加载 ImageNet 类别标签...');
+            try {
+                const response = await fetch('imagenet_classes.txt');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                const data = await response.text();
+                classes = data.split('\n').filter(x => x);
+                log(`成功加载 ${classes.length} 个类别`);
+                showResult('imagenetResult', 
+                    `✅ 成功加载 ${classes.length} 个类别<br>` +
+                    `示例: ${classes.slice(0, 5).join(', ')}...`,
+                    true);
+            } catch (error) {
+                log(`类别加载失败: ${error.message}`, 'error');
+                showResult('imagenetResult', `❌ 失败: ${error.message}`, false);
+            }
+        }
+
+        // 测试 3: 加载模型
+        async function testModelLoad() {
+            log('开始加载 MobileNet V3 模型...');
+            const modelPath = 'modelzoo/mobilenet/model.json';
+            
+            try {
+                log(`模型路径: ${modelPath}`);
+                log('使用 tf.loadGraphModel...');
+                
+                model = await tf.loadGraphModel(modelPath);
+                
+                log('✓ 模型加载成功');
+                log(`输入: ${JSON.stringify(model.inputs.map(i => ({name: i.name, shape: i.shape})))}`);
+                log(`输出: ${JSON.stringify(model.outputs.map(o => ({name: o.name, shape: o.shape})))}`);
+                
+                showResult('modelLoadResult', 
+                    `✅ 模型加载成功<br>` +
+                    `输入: ${model.inputs.map(i => i.name).join(', ')}<br>` +
+                    `输出: ${model.outputs.map(o => o.name).join(', ')}`,
+                    true);
+            } catch (error) {
+                log(`模型加载失败: ${error.message}`, 'error');
+                log(`错误堆栈: ${error.stack}`, 'error');
+                showResult('modelLoadResult', 
+                    `❌ 失败: ${error.message}<br>` +
+                    `<pre>${error.stack}</pre>`,
+                    false);
+            }
+        }
+
+        // 测试 4: 测试推理
+        async function testInference() {
+            if (!model) {
+                showResult('inferenceResult', '❌ 请先加载模型', false);
+                return;
+            }
+
+            log('开始测试模型推理...');
+            try {
+                // 创建一个测试图像（随机噪声）
+                log('创建测试输入 [1, 224, 224, 3]...');
+                const testInput = tf.randomNormal([1, 224, 224, 3]);
+                
+                log('执行推理...');
+                const startTime = performance.now();
+                const output = await model.executeAsync(testInput);
+                const endTime = performance.now();
+                
+                log(`推理完成，耗时: ${(endTime - startTime).toFixed(2)}ms`);
+                
+                const outputData = await output.data();
+                log(`输出形状: [${output.shape.join(', ')}]`);
+                log(`输出长度: ${outputData.length}`);
+                
+                // 获取 top 5
+                const values = Array.from(outputData);
+                const top5 = values
+                    .map((value, index) => ({ value, index }))
+                    .sort((a, b) => b.value - a.value)
+                    .slice(0, 5);
+                
+                const results = top5.map((item, i) => 
+                    `${i + 1}. 类别 ${item.index}: ${(item.value * 100).toFixed(2)}%`
+                ).join('<br>');
+                
+                testInput.dispose();
+                output.dispose();
+                
+                log('✓ 推理测试成功');
+                showResult('inferenceResult', 
+                    `✅ 推理成功 (${(endTime - startTime).toFixed(2)}ms)<br>` +
+                    `Top 5 结果:<br>${results}`,
+                    true);
+            } catch (error) {
+                log(`推理失败: ${error.message}`, 'error');
+                showResult('inferenceResult', `❌ 失败: ${error.message}`, false);
+            }
+        }
+
+        function clearLog() {
+            logMessages = [];
+            document.getElementById('logOutput').textContent = '';
+        }
+
+        // 页面加载完成后自动显示环境信息
+        window.onload = function() {
+            log('页面加载完成');
+            log(`浏览器: ${navigator.userAgent}`);
+            log(`TensorFlow.js 版本: ${tf.version.tfjs}`);
+            log(`当前 URL: ${window.location.href}`);
+        };
+    </script>
+</body>
+</html>

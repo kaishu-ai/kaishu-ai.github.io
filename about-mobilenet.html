@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MobileNet原理 - MobileNet 图像分类器</title>
+    <script src="i18n.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 80px 20px 40px;
+        }
+
+        /* 导航栏样式 */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            font-size: 1.5em;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 30px;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: #555;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            background: #f0f1ff;
+            color: #667eea;
+        }
+
+        .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        /* 语言选择器样式 */
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .language-selector {
+            position: relative;
+        }
+
+        .language-btn {
+            background: white;
+            border: 2px solid #e0e0e0;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95em;
+            transition: all 0.3s ease;
+        }
+
+        .language-btn:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .language-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 10px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            min-width: 180px;
+            display: none;
+            z-index: 1001;
+        }
+
+        .language-dropdown.active {
+            display: block;
+        }
+
+        .language-option {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .language-option:first-child {
+            border-radius: 10px 10px 0 0;
+        }
+
+        .language-option:last-child {
+            border-radius: 0 0 10px 10px;
+        }
+
+        .language-option:hover {
+            background: #f8f9ff;
+            color: #667eea;
+        }
+
+        .language-option.selected {
+            background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 50px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            color: #666;
+        }
+
+        .section {
+            margin-bottom: 50px;
+        }
+
+        .section h2 {
+            font-size: 2em;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .section h3 {
+            font-size: 1.5em;
+            color: #667eea;
+            margin: 25px 0 15px;
+        }
+
+        .section p {
+            line-height: 1.8;
+            color: #555;
+            margin-bottom: 15px;
+            font-size: 1.05em;
+        }
+
+        .architecture-diagram {
+            background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
+            border: 2px solid #667eea;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 30px 0;
+            text-align: center;
+        }
+
+        .architecture-diagram svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .layer-box {
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px;
+            display: inline-block;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
+            padding: 25px;
+            border-radius: 12px;
+            border: 2px solid #e0e0e0;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            border-color: #667eea;
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.2);
+        }
+
+        .feature-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .feature-title {
+            font-size: 1.3em;
+            color: #333;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .feature-desc {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin: 30px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+            color: #555;
+        }
+
+        tr:hover {
+            background: #f8f9ff;
+        }
+
+        .formula {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            text-align: center;
+            font-size: 1.1em;
+            color: #333;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 30px 20px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .section h2 {
+                font-size: 1.5em;
+            }
+
+            .nav-menu {
+                gap: 10px;
+            }
+
+            .nav-link {
+                padding: 6px 12px;
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo" data-i18n="nav.logo">🖼️ MobileNet</div>
+            <div class="nav-right">
+                <ul class="nav-menu">
+                    <li><a href="index.html" class="nav-link" data-i18n="nav.classifier">图像分类</a></li>
+                    <li><a href="about-mobilenet.html" class="nav-link active" data-i18n="nav.about">MobileNet原理</a></li>
+                    <li><a href="team.html" class="nav-link" data-i18n="nav.team">开发团队</a></li>
+                </ul>
+                <div class="language-selector">
+                    <button class="language-btn" id="languageBtn">
+                        <span id="currentFlag">🇨🇳</span>
+                        <span id="currentLang">中文</span>
+                        <span>▼</span>
+                    </button>
+                    <div class="language-dropdown" id="languageDropdown">
+                        <div class="language-option" data-lang="zh-CN">
+                            <span>🇨🇳</span>
+                            <span>中文</span>
+                        </div>
+                        <div class="language-option" data-lang="en">
+                            <span>🇺🇸</span>
+                            <span>English</span>
+                        </div>
+                        <div class="language-option" data-lang="ja">
+                            <span>🇯🇵</span>
+                            <span>日本語</span>
+                        </div>
+                        <div class="language-option" data-lang="es">
+                            <span>🇪🇸</span>
+                            <span>Español</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="header">
+            <h1 data-i18n="about.title">🧠 MobileNet 原理详解</h1>
+            <p data-i18n="about.subtitle">轻量级深度神经网络的革新之作</p>
+        </div>
+
+        <!-- 简介 -->
+        <div class="section">
+            <h2><span data-i18n="about.whatIs">📖 什么是 MobileNet？</span></h2>
+            <p data-i18n="about.whatIsDesc1">
+                MobileNet 是由 Google 在 2017 年提出的一系列轻量级深度学习模型，专门设计用于移动设备和嵌入式设备上的计算机视觉任务。它通过创新的网络架构设计，在保持较高准确率的同时大幅减少了计算量和参数数量。
+            </p>
+            <p data-i18n="about.whatIsDesc2">
+                MobileNet 的核心创新在于使用<strong>深度可分离卷积（Depthwise Separable Convolution）</strong>替代传统的卷积操作，这使得模型能够在资源受限的设备上高效运行。
+            </p>
+        </div>
+
+        <!-- 核心特性 -->
+        <div class="section">
+            <h2><span data-i18n="about.features">✨ 核心特性</span></h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <div class="feature-title" data-i18n="about.featureLight">轻量高效</div>
+                    <div class="feature-desc" data-i18n="about.featureLightDesc">模型体积小，推理速度快，适合移动端和边缘计算</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <div class="feature-title" data-i18n="about.featureAccurate">准确度高</div>
+                    <div class="feature-desc" data-i18n="about.featureAccurateDesc">在 ImageNet 数据集上达到 70%+ 的准确率</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔧</div>
+                    <div class="feature-title" data-i18n="about.featureFlexible">灵活可调</div>
+                    <div class="feature-desc" data-i18n="about.featureFlexibleDesc">支持宽度因子和分辨率调整，平衡精度与速度</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🌐</div>
+                    <div class="feature-title" data-i18n="about.featureWide">广泛应用</div>
+                    <div class="feature-desc" data-i18n="about.featureWideDesc">目标检测、人脸识别、图像分割等多种任务</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 深度可分离卷积 -->
+        <div class="section">
+            <h2><span data-i18n="about.convolution">🔍 深度可分离卷积</span></h2>
+            <p data-i18n="about.convolutionDesc">
+                深度可分离卷积是 MobileNet 的核心技术，它将标准卷积分解为两个更简单的操作：
+            </p>
+
+            <h3 data-i18n="about.depthwise">1. 深度卷积（Depthwise Convolution）</h3>
+            <p data-i18n="about.depthwiseDesc">
+                对输入的每个通道单独应用一个卷积核，不进行通道间的信息融合。这大大减少了计算量。
+            </p>
+
+            <h3 data-i18n="about.pointwise">2. 逐点卷积（Pointwise Convolution）</h3>
+            <p data-i18n="about.pointwiseDesc">
+                使用 1×1 的卷积核对深度卷积的输出进行线性组合，实现通道间的信息交互。
+            </p>
+
+            <div class="highlight-box">
+                <strong><span data-i18n="about.computeComparison">📊 计算量对比：</span></strong>
+                <div class="formula">
+                    标准卷积计算量：D<sub>K</sub> × D<sub>K</sub> × M × N × D<sub>F</sub> × D<sub>F</sub>
+                </div>
+                <div class="formula">
+                    深度可分离卷积：D<sub>K</sub> × D<sub>K</sub> × M × D<sub>F</sub> × D<sub>F</sub> + M × N × D<sub>F</sub> × D<sub>F</sub>
+                </div>
+                <p style="margin-top: 15px; text-align: center;">
+                    <strong><span data-i18n="about.computeReduction">计算量减少比例：</span></strong> <span data-i18n="about.reductionValue">约为</span> <strong>1/N + 1/D<sub>K</sub><sup>2</sup></strong>
+                    <br>
+                    <em><span data-i18n="about.reductionNote">（对于 3×3 卷积，计算量减少 8-9 倍）</span></em>
+                </p>
+            </div>
+        </div>
+
+        <!-- 网络架构 -->
+        <div class="section">
+            <h2><span data-i18n="about.architecture">🏗️ 网络架构</span></h2>
+            <p data-i18n="about.architectureDesc">
+                MobileNet 采用流线型的架构设计，由多个深度可分离卷积块堆叠而成：
+            </p>
+
+            <div class="architecture-diagram">
+                <h3 style="color: #667eea; margin-bottom: 20px;"><span data-i18n="about.architectureTitle">MobileNet 基本结构</span></h3>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+                    <div class="layer-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: bold;">
+                        <span data-i18n="about.inputImage">输入图像 (224×224×3)</span>
+                    </div>
+                    <div style="font-size: 2em; color: #667eea;">↓</div>
+                    <div class="layer-box">
+                        <span data-i18n="about.standardConvLayer">标准卷积层 (3×3, stride 2)</span>
+                    </div>
+                    <div style="font-size: 2em; color: #667eea;">↓</div>
+                    <div class="layer-box" style="background: #f8f9ff;">
+                        <span data-i18n="about.depthwiseBlocks">深度可分离卷积块 × 13</span>
+                        <div style="font-size: 0.9em; margin-top: 10px; color: #666;">
+                            <span data-i18n="about.depthwiseDetails">(深度卷积 + BN + ReLU + 逐点卷积 + BN + ReLU)</span>
+                        </div>
+                    </div>
+                    <div style="font-size: 2em; color: #667eea;">↓</div>
+                    <div class="layer-box">
+                        <span data-i18n="about.globalAvgPool">全局平均池化</span>
+                    </div>
+                    <div style="font-size: 2em; color: #667eea;">↓</div>
+                    <div class="layer-box">
+                        <span data-i18n="about.fullyConnected">全连接层 (1000 类)</span>
+                    </div>
+                    <div style="font-size: 2em; color: #667eea;">↓</div>
+                    <div class="layer-box" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; font-weight: bold;">
+                        <span data-i18n="about.softmaxOutput">Softmax 输出</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MobileNet 版本对比 -->
+        <div class="section">
+            <h2><span data-i18n="about.versions">📊 MobileNet 版本演进</span></h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th data-i18n="about.versionCol">版本</th>
+                            <th data-i18n="about.yearCol">发布年份</th>
+                            <th data-i18n="about.improvementCol">核心改进</th>
+                            <th data-i18n="about.accuracyCol">ImageNet Top-1 准确率</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>MobileNet V1</strong></td>
+                            <td>2017</td>
+                            <td data-i18n="about.v1Improvement">引入深度可分离卷积</td>
+                            <td>70.6%</td>
+                        </tr>
+                        <tr>
+                            <td><strong>MobileNet V2</strong></td>
+                            <td>2018</td>
+                            <td data-i18n="about.v2Improvement">引入倒残差结构和线性瓶颈</td>
+                            <td>72.0%</td>
+                        </tr>
+                        <tr>
+                            <td><strong>MobileNet V3</strong></td>
+                            <td>2019</td>
+                            <td data-i18n="about.v3Improvement">使用 NAS 搜索 + SE 注意力机制</td>
+                            <td>75.2%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- MobileNet V2 的改进 -->
+        <div class="section">
+            <h2><span data-i18n="about.v2Innovation">🚀 MobileNet V2 的创新</span></h2>
+            <p data-i18n="about.v2Desc">本项目使用的 MobileNet V2 相比 V1 有以下重要改进：</p>
+
+            <h3 data-i18n="about.invertedResiduals">1. 倒残差结构（Inverted Residuals）</h3>
+            <p data-i18n="about.invertedResidualsDesc">
+                与传统残差块相反，MobileNet V2 先扩展通道数，再进行深度卷积，最后压缩回原始维度。这种"先胖后瘦"的设计更适合移动端。
+            </p>
+
+            <h3 data-i18n="about.linearBottlenecks">2. 线性瓶颈（Linear Bottlenecks）</h3>
+            <p data-i18n="about.linearBottlenecksDesc">
+                在瓶颈层（通道数较少的层）去除非线性激活函数（ReLU），使用线性激活，避免信息丢失。
+            </p>
+
+            <h3 data-i18n="about.featureReuse">3. 更高效的特征复用</h3>
+            <p data-i18n="about.featureReuseDesc">
+                通过残差连接，允许梯度和信息更好地在网络中流动，提升训练效果。
+            </p>
+
+            <div class="highlight-box">
+                <strong><span data-i18n="about.advantagesSummary">💡 优势总结：</span></strong>
+                <ul style="margin-top: 10px; padding-left: 20px;">
+                    <li data-i18n="about.adv1">相同精度下，速度比 V1 快 30%</li>
+                    <li data-i18n="about.adv2">相同速度下，精度比 V1 高 1-2%</li>
+                    <li data-i18n="about.adv3">更少的参数量（约 3.4M）</li>
+                    <li data-i18n="about.adv4">更强的表达能力和泛化性能</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 应用场景 -->
+        <div class="section">
+            <h2><span data-i18n="about.applications">🎯 应用场景</span></h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <div class="feature-title" data-i18n="about.appMobile">移动应用</div>
+                    <div class="feature-desc" data-i18n="about.appMobileDesc">照片美化、智能相册分类、实时滤镜</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🤖</div>
+                    <div class="feature-title" data-i18n="about.appRobot">智能机器人</div>
+                    <div class="feature-desc" data-i18n="about.appRobotDesc">物体识别、导航避障、人机交互</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🏥</div>
+                    <div class="feature-title" data-i18n="about.appMedical">医疗诊断</div>
+                    <div class="feature-desc" data-i18n="about.appMedicalDesc">X光片分析、皮肤病检测、病理切片识别</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🚗</div>
+                    <div class="feature-title" data-i18n="about.appAuto">自动驾驶</div>
+                    <div class="feature-desc" data-i18n="about.appAutoDesc">交通标志识别、行人检测、车道线识别</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🏭</div>
+                    <div class="feature-title" data-i18n="about.appIndustry">工业检测</div>
+                    <div class="feature-desc" data-i18n="about.appIndustryDesc">产品质量检测、缺陷识别、自动分拣</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🌾</div>
+                    <div class="feature-title" data-i18n="about.appAgriculture">智慧农业</div>
+                    <div class="feature-desc" data-i18n="about.appAgricultureDesc">作物病害识别、成熟度判断、杂草检测</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 实现细节 -->
+        <div class="section">
+            <h2><span data-i18n="about.implementation">⚙️ 本项目实现</span></h2>
+            <p data-i18n="about.implDesc">
+                本项目使用 TensorFlow.js 实现 MobileNet 图像分类，具有以下特点：
+            </p>
+            <div class="highlight-box">
+                <ul style="padding-left: 20px;">
+                    <li><strong><span data-i18n="about.implModel">模型版本：</span></strong>MobileNet V2</li>
+                    <li><strong><span data-i18n="about.implWidth">宽度因子：</span></strong>1.0（完整模型）</li>
+                    <li><strong><span data-i18n="about.implResolution">输入分辨率：</span></strong>224×224</li>
+                    <li><strong><span data-i18n="about.implClasses">分类类别：</span></strong>1000 类（ImageNet）</li>
+                    <li><strong><span data-i18n="about.implWeights">权重来源：</span></strong>TensorFlow.js 预训练模型</li>
+                    <li><strong><span data-i18n="about.implEnv">推理环境：</span></strong>浏览器端（WebGL 加速）</li>
+                    <li><strong><span data-i18n="about.implTime">平均推理时间：</span></strong>约 50-100ms（取决于设备性能）</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 参考资料 -->
+        <div class="section">
+            <h2><span data-i18n="about.references">📚 参考资料</span></h2>
+            <ul style="padding-left: 20px; line-height: 2;">
+                <li>
+                    <strong>MobileNets V1:</strong> 
+                    <a href="https://arxiv.org/abs/1704.04861" target="_blank" style="color: #667eea; text-decoration: none;">
+                        MobileNets: Efficient Convolutional Neural Networks for Mobile Vision Applications
+                    </a>
+                </li>
+                <li>
+                    <strong>MobileNets V2:</strong> 
+                    <a href="https://arxiv.org/abs/1801.04381" target="_blank" style="color: #667eea; text-decoration: none;">
+                        MobileNetV2: Inverted Residuals and Linear Bottlenecks
+                    </a>
+                </li>
+                <li>
+                    <strong>TensorFlow.js:</strong> 
+                    <a href="https://www.tensorflow.org/js" target="_blank" style="color: #667eea; text-decoration: none;">
+                        官方文档
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="lang-switcher.js"></script>
+</body>
+</html>
