@@ -6,7 +6,9 @@ let imagenetClasses = null; // ImageNet 类别标签
 // DOM 元素
 const uploadArea = document.getElementById('uploadArea');
 const fileInput = document.getElementById('fileInput');
+const cameraInput = document.getElementById('cameraInput');
 const uploadBtn = document.getElementById('uploadBtn');
+const cameraBtn = document.getElementById('cameraBtn');
 const classifyBtn = document.getElementById('classifyBtn');
 const clearBtn = document.getElementById('clearBtn');
 const imagePreview = document.getElementById('imagePreview');
@@ -71,8 +73,21 @@ uploadBtn.addEventListener('click', () => {
     fileInput.click();
 });
 
+// 拍照按钮点击事件
+cameraBtn.addEventListener('click', () => {
+    cameraInput.click();
+});
+
 // 文件输入变化事件
 fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        loadImage(file);
+    }
+});
+
+// 相机输入变化事件
+cameraInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (file) {
         loadImage(file);
@@ -246,6 +261,7 @@ clearBtn.addEventListener('click', () => {
     currentImage = null;
     imagePreview.src = '';
     fileInput.value = '';
+    cameraInput.value = '';
     previewSection.classList.remove('active');
     results.classList.remove('active');
     classifyBtn.disabled = true;

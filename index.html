@@ -673,10 +673,12 @@
             <div class="upload-text" data-i18n="home.uploadText">点击上传图片或拖放图片到这里</div>
             <div class="upload-hint" data-i18n="home.uploadHint">也可以使用 Ctrl+V (Cmd+V) 粘贴图片</div>
             <input type="file" id="fileInput" accept="image/*">
+            <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;">
         </div>
 
         <div class="button-group">
             <button id="uploadBtn" data-i18n="home.uploadBtn">选择文件</button>
+            <button id="cameraBtn" data-i18n="home.cameraBtn">📸 拍照</button>
             <button id="classifyBtn" data-i18n="home.classifyBtn" disabled>开始分类</button>
             <button id="clearBtn" data-i18n="home.clearBtn">清除</button>
         </div>
