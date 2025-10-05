@@ -204,17 +204,21 @@ async function classifyWithTFModel(imgElement) {
     const batched = normalized.expandDims(0);
     
     // 进行预测
-    const predictions = await mobileNetModel.executeAsync(batched);
+    const logits = await mobileNetModel.executeAsync(batched);
+    
+    // 应用 softmax 转换为概率
+    const probabilities = tf.softmax(logits);
     
     // 获取概率值（取第一个batch）
-    const values = await predictions.data();
+    const values = await probabilities.data();
     
     // 清理张量
     img.dispose();
     resized.dispose();
     normalized.dispose();
     batched.dispose();
-    predictions.dispose();
+    logits.dispose();
+    probabilities.dispose();
     
     // 获取 top 5
     const valuesAndIndices = Array.from(values)
