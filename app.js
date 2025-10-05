@@ -211,13 +211,10 @@ async function classifyWithTFModel(imgElement) {
         .sort((a, b) => b.value - a.value)
         .slice(0, 5);
     
-    // 计算 top 5 的概率总和
-    const top5Sum = valuesAndIndices.reduce((sum, item) => sum + item.value, 0);
-    
-    // 重新归一化 top 5，使其和为 100%
+    // 直接返回 softmax 概率，不重新归一化
     return valuesAndIndices.map(item => ({
         className: imagenetClasses[item.index] || `Unknown (${item.index})`,
-        probability: item.value / top5Sum  // 归一化
+        probability: item.value
     }));
 }
 
